@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CREATE EVENTS</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* تغيير لون الأزرار */
+        .btn-primary {
+            background-color: #007bff; /* لون خلفية الزر */
+            border-color: #007bff; /* لون الحدود */
+            font-size: 1.2rem; /* تكبير حجم الخط */
+        }
+        .btn-primary:hover {
+            background-color: #0056b3; /* لون الخلفية عند التمرير */
+            border-color: #0056b3; /* لون الحدود عند التمرير */
+        }
+        .btn-warning {
+            background-color: #ffc107; /* لون خلفية الزر */
+            border-color: #ffc107; /* لون الحدود */
+            font-size: 1.2rem; /* تكبير حجم الخط */
+        }
+        .btn-warning:hover {
+            background-color: #e0a800; /* لون الخلفية عند التمرير */
+            border-color: #e0a800; /* لون الحدود عند التمرير */
+        }
+        .btn-danger {
+            background-color: #dc3545; /* لون خلفية الزر */
+            border-color: #dc3545; /* لون الحدود */
+            font-size: 1.2rem; /* تكبير حجم الخط */
+        }
+        .btn-danger:hover {
+            background-color: #c82333; /* لون الخلفية عند التمرير */
+            border-color: #c82333; /* لون الحدود عند التمرير */
+        }
+
+        /* تكبير حجم الخط في العناوين */
+        h2, h3 {
+            font-size: 2rem; /* تكبير حجم الخط */
+        }
+
+        /* تكبير حجم الخط في النصوص */
+        p, small {
+            font-size: 1.1rem; /* تكبير حجم الخط */
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>CREATE EVENTS</h2>
+
+        <form id="jobForm">
+            <div class="form-group">
+                <label for="title">EVENTS Title:</label>
+                <input type="text" class="form-control" id="title" required>
+            </div>
+            <div class="form-group">
+                <label for="description">EVENTS Description:</label>
+                <textarea class="form-control" id="description" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="startTime">Start Time:</label>
+                <input type="datetime-local" class="form-control" id="startTime" required>
+            </div>
+            <div class="form-group">
+                <label for="endTime">End Time:</label>
+                <input type="datetime-local" class="form-control" id="endTime" required>
+            </div>
+            <div class="form-group">
+                <label for="status">EVENTS Status:</label>
+                <select class="form-control" id="status" required>
+                    <option value="PENDING">Pending</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="COMPLETED">Completed</option>
+                </select>
+            </div>
+
+            <input type="hidden" id="userId" value="1">
+            <input type="hidden" id="jobId">
+
+            <button type="submit" class="btn btn-primary">Create EVENT</button>
+        </form>
+
+        <h3 class="mt-5">Existing EVENTS</h3>
+        <div id="jobList" class="list-group">
+            <!-- سيتم ملء هذه القائمة باستخدام JavaScript -->
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Editing Job -->
+    <div class="modal fade" id="editJobModal" tabindex="-1" role="dialog" aria-labelledby="editJobModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editJobModalLabel">Edit EVENTS</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editJobForm">
+                        <div class="form-group">
+                            <label for="editTitle">EVENTS Title:</label>
+                            <input type="text" class="form-control" id="editTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDescription">EVENTS Description:</label>
+                            <textarea class="form-control" id="editDescription" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editStartTime">Start Time:</label>
+                            <input type="datetime-local" class="form-control" id="editStartTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editEndTime">End Time:</label>
+                            <input type="datetime-local" class="form-control" id="editEndTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editStatus">EVENTS Status:</label>
+                            <select class="form-control" id="editStatus" required>
+                                <option value="PENDING">Pending</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="editJobId">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="updateJob()">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('jobForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const status = document.getElementById('status').value;
+            const userId = document.getElementById('userId').value;
+
+            // إرسال البيانات إلى الخادم
+            fetch('/api/Jobs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title, description, startTime, endTime, status, userId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Job added successfully!');
+                loadJobs();
+                resetForm();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        function loadJobs() {
+            fetch('/api/user/1')
+                .then(response => response.json())
+                .then(jobs => {
+                    const jobList = document.getElementById('jobList');
+                    jobList.innerHTML = '';
+                    jobs.forEach(job => {
+                        const jobItem = document.createElement('div');
+                        jobItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        jobItem.innerHTML = `
+                            <div>
+                                <h5>${job.title}</h5>
+                                <p>${job.description}</p>
+                                <small>${job.startTime} to ${job.endTime}</small><br>
+                                <small>Status: ${job.status}</small>
+                            </div>
+                        `;
+
+                        const editButton = document.createElement('button');
+                        editButton.className = 'btn btn-warning btn-sm ml-2';
+                        editButton.textContent = 'Edit';
+                        editButton.onclick = () => editJob(job);
+                        jobItem.appendChild(editButton);
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.className = 'btn btn-danger btn-sm ml-2';
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.onclick = () => {
+                            if (confirm('Are you sure you want to delete this job?')) {
+                                deleteJob(job.id);
+                            }
+                        };
+                        jobItem.appendChild(deleteButton);
+
+                        jobList.appendChild(jobItem);
+                    });
+                });
+        }
+
+        function editJob(job) {
+            document.getElementById('editTitle').value = job.title;
+            document.getElementById('editDescription').value = job.description;
+            document.getElementById('editStartTime').value = job.startTime;
+            document.getElementById('editEndTime').value = job.endTime;
+            document.getElementById('editStatus').value = job.status;
+            document.getElementById('editJobId').value = job.id;
+
+            $('#editJobModal').modal('show');
+        }
+
+        function updateJob() {
+            const id = document.getElementById('editJobId').value;
+            const title = document.getElementById('editTitle').value;
+            const description = document.getElementById('editDescription').value;
+            const startTime = document.getElementById('editStartTime').value;
+            const endTime = document.getElementById('editEndTime').value;
+            const status = document.getElementById('editStatus').value;
+
+            fetch(`/api/Jobs/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title, description, startTime, endTime, status }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Job updated successfully!');
+                loadJobs();
+                $('#editJobModal').modal('hide');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function deleteJob(id) {
+            fetch(`/api/Jobs/${id}`, {
+                method: 'DELETE',
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Job deleted successfully!');
+                    loadJobs();
+                } else {
+                    alert('Error deleting job.');
+                }
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('jobForm').reset();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadJobs);
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -6,8 +6,10 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import com.example.ROPULVA.Component.EventsComponent;
 import com.example.ROPULVA.Model.DTO.EventsRespoDTO;
 import com.example.ROPULVA.Model.DTO.EventsSendDTO;
 import com.example.ROPULVA.Model.DTO.EventsupdateDTO;
@@ -22,15 +24,19 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+
 public class EventsImp implements EventsService {
 	private final EventsRepositry repo;
 	private final EventsMapper map;
 	private final UserRepository userrepo;
+	private final EventsComponent eventsComponent;
 	
     private static final Logger logger = LoggerFactory.getLogger(EventsImp.class); 
 
 	@Override
+	 @Cacheable(value = "jobs", key = "#id")
 	public EventsRespoDTO GetJobs(Long id) {
+		 eventsComponent.logEventAction("Get", id);
 		EventsEntity get= this.repo.getById(id);
 		EventsRespoDTO getall=this.map.dto(get);
 		return getall;
@@ -38,6 +44,7 @@ public class EventsImp implements EventsService {
 	@Override
 	public EventsSendDTO send(EventsSendDTO entity) {
 		try {
+			 eventsComponent.validateEventData(entity.getTitle(), entity.getDescription());
 			userEntity user = userrepo.findById(entity.getUserId())
 			        .orElseThrow(() -> new RuntimeException("user not found"));
 			    EventsEntity send = this.map.toEntitysend(entity);
@@ -53,11 +60,11 @@ public class EventsImp implements EventsService {
 	@Override
 	public String delete(Long id) { 
 	    try {
+	    	 eventsComponent.logEventAction("DELETE", id);
 	        Optional<EventsEntity> jobToDelete = this.repo.findById(id);
 	        
 	        if (jobToDelete.isPresent()) {
 	            EventsEntity job = jobToDelete.get();
-	            // قم بإزالة هذا الشرط إذا كنت لا تريد التحقق من المستخدم
 	            this.repo.deleteById(id);
 	            return "Job deleted successfully";
 	        } else {
@@ -72,6 +79,7 @@ public class EventsImp implements EventsService {
 	@Override
 	public EventsupdateDTO update(EventsupdateDTO entity) {
 		try {
+			 eventsComponent.validateEventData(entity.getTitle(), entity.getDescription());
 			userEntity user = userrepo.findById(entity.getUserId())
 		            .orElseThrow(() -> new RuntimeException("User not found"));
 			EventsEntity update=this.map.toEntityupdate(entity);
@@ -84,8 +92,10 @@ public class EventsImp implements EventsService {
 		        throw new RuntimeException("An error occurred while updating the task");		}
 	}
 	@Override
+	@Cacheable(value = "jobsByUser", key = "#userId")
 	public List<EventsRespoDTO> getJobsByUserId(Long userId) {
 		 try {
+			 eventsComponent.logEventAction("Get", userId);
 			  List<EventsEntity> jobs = this.repo.findByUserUserId(userId);
 		        return jobs.stream()
 		                .map(map::dto) 
